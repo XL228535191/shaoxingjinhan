@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数据列表管理</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        /* 头部样式 */
+        header {
+            background-color: #fff;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            padding: 15px 0;
+            margin-bottom: 20px;
+        }
+        
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #3388ff;
+            text-decoration: none;
+        }
+        
+        .user-info a {
+            text-decoration: none;
+            color: #666;
+            font-size: 14px;
+            margin-left: 15px;
+        }
+        
+        /* 页面标题 */
+        .page-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #333;
+            display: flex;
+            align-items: center;
+        }
+        
+        .page-title::before {
+            content: "";
+            display: inline-block;
+            width: 4px;
+            height: 20px;
+            background-color: #3388ff;
+            margin-right: 10px;
+            border-radius: 2px;
+        }
+        
+        /* 筛选区域 */
+        .filter-section {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .filter-form {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .form-label {
+            margin-bottom: 5px;
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .form-input {
+            padding: 10px 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        
+        .form-input:focus {
+            border-color: #3388ff;
+            outline: none;
+        }
+        
+        .filter-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+            grid-column: 1 / -1;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background-color: #3388ff;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: #2a76e6;
+        }
+        
+        .btn-secondary {
+            background-color: #f5f5f5;
+            color: #666;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #eaeaea;
+        }
+        
+        /* 列表区域 */
+        .list-section {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+        
+        .table-container {
+            overflow-x: auto;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .data-table th {
+            background-color: #f8f9fa;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            color: #333;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .data-table td {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .data-table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .data-table tr:hover {
+            background-color: #f9f9f9;
+        }
+        
+        .status-published {
+            color: #52c41a;
+            font-weight: 500;
+        }
+        
+        .status-draft {
+            color: #faad14;
+            font-weight: 500;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 12px;
+            border-radius: 3px;
+        }
+        
+        .btn-success {
+            background-color: #52c41a;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background-color: #46a016;
+        }
+        
+        .btn-danger {
+            background-color: #ff4d4f;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background-color: #e04345;
+        }
+        
+        /* 分页组件 */
+        .pagination {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+        
+        .pagination-info {
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .pagination-controls {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .pagination-btn {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            background-color: #fff;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        
+        .pagination-btn:hover {
+            border-color: #3388ff;
+            color: #3388ff;
+        }
+        
+        .pagination-btn.active {
+            background-color: #3388ff;
+            color: white;
+            border-color: #3388ff;
+        }
+        
+        .pagination-btn.disabled {
+            color: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .pagination-btn.disabled:hover {
+            border-color: #ddd;
+            color: #ccc;
+        }
+        
+        /* 空状态 */
+        .empty-state {
+            padding: 40px 20px;
+            text-align: center;
+            color: #999;
+        }
+        
+        .empty-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+        
+        /* 移动端适配 */
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .filter-form {
+                grid-template-columns: 1fr;
+            }
+            
+            .data-table {
+                min-width: 700px;
+            }
+            
+            .pagination {
+                flex-direction: column;
+                gap: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <!-- 头部导航 -->
+        <header>
+            <div class="header-content">
+                <a href="#" class="logo">数据管理平台</a>
+                <div class="user-info">
+                    <a href="#">管理员</a>
+                    <a href="#">退出</a>
+                </div>
+            </div>
+        </header>
+
+        <div class="container">
+            <!-- 页面标题 -->
+            <h1 class="page-title">文章列表</h1>
+            
+            <!-- 筛选区域 -->
+            <section class="filter-section">
+                <div class="filter-form">
+                    <div class="form-group">
+                        <label class="form-label">标题</label>
+                        <input type="text" class="form-input" placeholder="输入标题关键词" v-model="filters.title">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">正文</label>
+                        <input type="text" class="form-input" placeholder="输入正文关键词" v-model="filters.content">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">状态</label>
+                        <select class="form-input" v-model="filters.status">
+                            <option value="">全部</option>
+                            <option value="published">已发布</option>
+                            <option value="draft">草稿</option>
+                        </select>
+                    </div>
+                    <div class="filter-actions">
+                        <button class="btn btn-primary" @click="search">搜索</button>
+                        <button class="btn btn-secondary" @click="resetFilters">重置</button>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- 列表区域 -->
+            <section class="list-section">
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th width="5%">ID</th>
+                                <th width="25%">标题</th>
+                                <th width="40%">正文</th>
+                                <th width="10%">状态</th>
+                                <th width="20%">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-if="filteredData.length === 0">
+                                <td colspan="5" class="empty-state">
+                                    <div class="empty-icon">📄</div>
+                                    <p>暂无数据</p>
+                                </td>
+                            </tr>
+                            <tr v-for="item in paginatedData" :key="item.id">
+                                <td>{{ item.id }}</td>
+                                <td>{{ item.title }}</td>
+                                <td>{{ truncateText(item.content, 50) }}</td>
+                                <td>
+                                    <span :class="`status-${item.status}`">
+                                        {{ item.status === 'published' ? '已发布' : '草稿' }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn btn-small btn-success" 
+                                                v-if="item.status !== 'published'"
+                                                @click="publishItem(item.id)">
+                                            发布
+                                        </button>
+                                        <button class="btn btn-small btn-danger" 
+                                                @click="deleteItem(item.id)">
+                                            删除
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+            
+            <!-- 分页组件 -->
+            <div class="pagination" v-if="filteredData.length > 0">
+                <div class="pagination-info">
+                    显示第 {{ (currentPage - 1) * pageSize + 1 }} 到 {{ Math.min(currentPage * pageSize, filteredData.length) }} 条，共 {{ filteredData.length }} 条记录
+                </div>
+                <div class="pagination-controls">
+                    <button class="pagination-btn" 
+                            :class="{ disabled: currentPage === 1 }"
+                            @click="changePage(currentPage - 1)">
+                        上一页
+                    </button>
+                    <button class="pagination-btn" 
+                            v-for="page in pageNumbers" 
+                            :key="page"
+                            :class="{ active: page === currentPage }"
+                            @click="changePage(page)">
+                        {{ page }}
+                    </button>
+                    <button class="pagination-btn" 
+                            :class="{ disabled: currentPage === totalPages }"
+                            @click="changePage(currentPage + 1)">
+                        下一页
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { createApp, ref, computed, onMounted } = Vue;
+        
+        createApp({
+            setup() {
+                // 筛选条件
+                const filters = ref({
+                    title: '',
+                    content: '',
+                    status: ''
+                });
+                
+                // 分页设置
+                const currentPage = ref(1);
+                const pageSize = ref(10);
+                
+                // 模拟数据
+                const data = ref([]);
+                
+                // 初始化数据
+                const initData = () => {
+                    const sampleData = [];
+                    for (let i = 1; i <= 45; i++) {
+                        sampleData.push({
+                            id: i,
+                            title: `文章标题 ${i}`,
+                            content: `这是第 ${i} 篇文章的正文内容，包含一些示例文本用于演示列表页的功能。`,
+                            status: i % 3 === 0 ? 'published' : 'draft',
+                            createTime: new Date()
+                        });
+                    }
+                    data.value = sampleData;
+                };
+                
+                // 过滤后的数据
+                const filteredData = computed(() => {
+                    return data.value.filter(item => {
+                        const titleMatch = !filters.value.title || 
+                            item.title.toLowerCase().includes(filters.value.title.toLowerCase());
+                        const contentMatch = !filters.value.content || 
+                            item.content.toLowerCase().includes(filters.value.content.toLowerCase());
+                        const statusMatch = !filters.value.status || 
+                            item.status === filters.value.status;
+                        
+                        return titleMatch && contentMatch && statusMatch;
+                    });
+                });
+                
+                // 分页后的数据
+                const paginatedData = computed(() => {
+                    const start = (currentPage.value - 1) * pageSize.value;
+                    const end = start + pageSize.value;
+                    return filteredData.value.slice(start, end);
+                });
+                
+                // 总页数
+                const totalPages = computed(() => {
+                    return Math.ceil(filteredData.value.length / pageSize.value);
+                });
+                
+                // 页码数组
+                const pageNumbers = computed(() => {
+                    const pages = [];
+                    const maxVisiblePages = 5;
+                    let startPage = Math.max(1, currentPage.value - Math.floor(maxVisiblePages / 2));
+                    let endPage = Math.min(totalPages.value, startPage + maxVisiblePages - 1);
+                    
+                    if (endPage - startPage + 1 < maxVisiblePages) {
+                        startPage = Math.max(1, endPage - maxVisiblePages + 1);
+                    }
+                    
+                    for (let i = startPage; i <= endPage; i++) {
+                        pages.push(i);
+                    }
+                    
+                    return pages;
+                });
+                
+                // 搜索
+                const search = () => {
+                    currentPage.value = 1;
+                };
+                
+                // 重置筛选条件
+                const resetFilters = () => {
+                    filters.value = {
+                        title: '',
+                        content: '',
+                        status: ''
+                    };
+                    currentPage.value = 1;
+                };
+                
+                // 切换页码
+                const changePage = (page) => {
+                    if (page < 1 || page > totalPages.value) return;
+                    currentPage.value = page;
+                };
+                
+                // 发布文章
+                const publishItem = (id) => {
+                    const item = data.value.find(item => item.id === id);
+                    if (item) {
+                        item.status = 'published';
+                        alert(`文章 "${item.title}" 已发布`);
+                    }
+                };
+                
+                // 删除文章
+                const deleteItem = (id) => {
+                    if (confirm('确定要删除这篇文章吗？')) {
+                        const index = data.value.findIndex(item => item.id === id);
+                        if (index !== -1) {
+                            data.value.splice(index, 1);
+                            alert('文章已删除');
+                        }
+                    }
+                };
+                
+                // 截断文本
+                const truncateText = (text, maxLength) => {
+                    if (text.length <= maxLength) return text;
+                    return text.substring(0, maxLength) + '...';
+                };
+                
+                // 初始化
+                onMounted(() => {
+                    initData();
+                });
+                
+                return {
+                    filters,
+                    currentPage,
+                    pageSize,
+                    data,
+                    filteredData,
+                    paginatedData,
+                    totalPages,
+                    pageNumbers,
+                    search,
+                    resetFilters,
+                    changePage,
+                    publishItem,
+                    deleteItem,
+                    truncateText
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
